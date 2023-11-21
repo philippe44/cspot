@@ -26,7 +26,7 @@ CliPlayer::CliPlayer(std::unique_ptr<AudioSink> sink,
   this->audioSink = std::move(sink);
 
   this->centralAudioBuffer =
-      std::make_shared<bell::CentralAudioBuffer>(128 * 1024);
+      std::make_shared<bell::CentralAudioBuffer>(1 * 1024);
 
 #ifndef BELL_DISABLE_CODECS
   this->dsp = std::make_shared<bell::BellDSP>(this->centralAudioBuffer);
@@ -73,7 +73,7 @@ CliPlayer::CliPlayer(std::unique_ptr<AudioSink> sink,
             this->playlistEnd = true;
             break;
           case cspot::SpircHandler::EventType::VOLUME: {
-            int volume = std::get<int>(event->data);
+            volume = std::get<int>(event->data);
             break;
           }
           default:
@@ -128,6 +128,12 @@ void CliPlayer::runTask() {
         this->dsp->process(chunk->pcmData, chunk->pcmSize, 2, 44100,
                            bell::BitWidth::BW_16);
 #endif
+
+        // not very clean but bell::dsp is not always available
+        for (int16_t* pcm = (int16_t*)chunk->pcmData; (uint8_t*)pcm < chunk->pcmData + chunk->pcmSize; pcm++) {
+            *pcm = (*pcm * volume) / UINT16_MAX;
+        }
+
         this->audioSink->feedPCMFrames(chunk->pcmData, chunk->pcmSize);
       }
     } else {

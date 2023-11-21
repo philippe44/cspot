@@ -213,6 +213,9 @@ int main(int argc, char** argv) {
       // Create a player, pass the handler
       auto player = std::make_shared<CliPlayer>(std::move(audioSink), handler);
 
+      // start muted
+      handler->setRemoteVolume(0);
+
       // If we wanted to handle multiple devices, we would halt this loop
       // when a new zeroconf login is requested, and reinitialize the session
       while (isRunning) {

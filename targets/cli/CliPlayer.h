@@ -30,6 +30,7 @@ class CliPlayer : public bell::Task {
   std::shared_ptr<bell::BellDSP> dsp;
   std::unique_ptr<AudioSink> audioSink;
   std::shared_ptr<bell::CentralAudioBuffer> centralAudioBuffer;
+  int volume = 0;
 
   void feedData(uint8_t* data, size_t len);
 
