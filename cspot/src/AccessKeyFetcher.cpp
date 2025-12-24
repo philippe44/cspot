@@ -78,19 +78,17 @@ void AccessKeyFetcher::updateAccessKey() {
         "https://accounts.spotify.com/api/token",
         { {"Content-Type", "application/x-www-form-urlencoded"} }, body);
     
-    auto responseBytes = response->bytes();
-
 #ifdef BELL_ONLY_CJSON
-    cJSON* root = cJSON_Parse(responseBytes.c_str());
+    cJSON* root = cJSON_Parse(response->body().data());
     if (!cJSON_GetObjectItem(root, "error")) {
-        access_key = std::string(cJSON_GetObjectItem(root, "access_token")->valuestring);
+        accessKey = std::string(cJSON_GetObjectItem(root, "access_token")->valuestring);
         int expiresIn = cJSON_GetObjectItem(root, "expires_in")->valueint;
         cJSON_Delete(root);
 #else
-    auto root = nlohmann::json::parse(responseBytes);
+    auto root = nlohmann::json::parse(response->bytes());
     if (!root.contains("error")) {
-      accessKey = std::string(root["access_token"]);
-      int expiresIn = root["expires_in"];
+        accessKey = std::string(root["access_token"]);
+        int expiresIn = root["expires_in"];
 #endif
         // Successfully received an auth token
       CSPOT_LOG(info, "Access token sucessfully fetched");
