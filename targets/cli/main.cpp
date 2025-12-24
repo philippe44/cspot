@@ -36,6 +36,8 @@
 #include "NamedPipeAudioSink.h"  // for NamedPipeAudioSink
 #endif
 
+#include "ClientInfo.h"
+
 class ZeroconfAuthenticator {
  public:
   ZeroconfAuthenticator(){};
@@ -152,6 +154,8 @@ int main(int argc, char** argv) {
                    "if you use facebook login you can set a password in your "
                    "account settings\n";
       std::cout << "-c, --credentials         json file to store/load reusable credentials\n";
+      std::cout << "-i, --client_id           Spotify client's id\n";
+      std::cout << "-s, --client_secret       Spotify client's secret\n";
       std::cout << "-b, --bitrate             bitrate (320, 160, 96)\n";
       std::cout << "\n";
       std::cout << "ddd 2022\n";
@@ -192,6 +196,9 @@ int main(int argc, char** argv) {
       ctx->config.audioFormat = args->bitrate;
     }
 
+    ctx->config.clientId = args->clientId.size() ? args->clientId : CLIENT_ID;
+    ctx->config.clientSecret = args->clientSecret.size() ? args->clientSecret : CLIENT_SECRET;
+    
     CSPOT_LOG(info, "Creating player");
     ctx->session->connectWithRandomAp();
     ctx->config.authData = ctx->session->authenticate(loginBlob);

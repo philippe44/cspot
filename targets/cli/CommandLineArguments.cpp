@@ -31,6 +31,18 @@ std::shared_ptr<CommandLineArguments> CommandLineArguments::parse(int argc,
         throw std::invalid_argument("expected path after the username flag");
       }
       result->username = std::string(argv[++i]);
+    } else if (stringVal == "-i" || stringVal == "--client_id") {
+        // check if we have something more to read from the arguments
+        if (i >= argc - 1) {
+            throw std::invalid_argument("expected string after the client id flag");
+        }
+        result->clientId = std::string(argv[++i]);
+    } else if (stringVal == "-s" || stringVal == "--client_secret") {
+        // check if we have something more to read from the arguments
+        if (i >= argc - 1) {
+            throw std::invalid_argument("expected string after the client secret flag");
+        }
+        result->clientSecret = std::string(argv[++i]);
     } else if (stringVal == "-p" || stringVal == "--password") {
       if (i >= argc - 1) {
         throw std::invalid_argument("expected path after the password flag");

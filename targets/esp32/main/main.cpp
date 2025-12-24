@@ -25,6 +25,8 @@
 #include <LoginBlob.h>
 #include <SpircHandler.h>
 
+#include <ClientInfo.h>
+
 #include <inttypes.h>
 #include "BellTask.h"
 #include "CircularBuffer.h"
@@ -199,6 +201,10 @@ class CSpotTask : public bell::Task {
     if (gotBlob) {
       auto ctx = cspot::Context::createFromBlob(blob);
       CSPOT_LOG(info, "Creating player");
+      
+      ctx->config.clientId = CLIENT_ID;
+      ctx->config.clientSecret = CLIENT_SECRET;
+      
       ctx->session->connectWithRandomAp();
       auto token = ctx->session->authenticate(blob);
 

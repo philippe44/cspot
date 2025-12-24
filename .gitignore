@@ -10,3 +10,4 @@ config.json
 cspot/protos
 targets/esp32/sdkconfig.cspot-wrover-b
 *.bak
+targets/cli/ClientInfo.h
