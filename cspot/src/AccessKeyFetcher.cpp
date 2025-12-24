@@ -71,10 +71,7 @@ void AccessKeyFetcher::updateAccessKey() {
   do {
     CSPOT_LOG(info, "Access token expired, fetching new one...");
 
-    std::string client_id("4f4102fa8d1d45d5bb6aea87915f4329"), client_secret("aefacafba2414d0fbfa2d8314fd3d204");
-    std::string credentials;
-
-    credentials = "grant_type=client_credentials&client_id=" + client_id + "&client_secret=" + client_secret;
+    auto credentials = "grant_type=client_credentials&client_id=" + ctx->config.clientId + "&client_secret=" + ctx->config.clientSecret;
     std::vector<uint8_t> body(credentials.begin(), credentials.end());
     
     auto response = bell::HTTPClient::post(

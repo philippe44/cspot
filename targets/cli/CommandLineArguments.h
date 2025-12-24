@@ -25,6 +25,14 @@ class CommandLineArguments {
   /**
      * Bitrate setting.
     */
+  std::string clientId;
+  /**
+     * Spotify's client ID.
+    */
+  std::string clientSecret;
+  /**
+     * Spotify's client secret
+    */
   bool setBitrate = false;
   AudioFormat bitrate;
   /**
