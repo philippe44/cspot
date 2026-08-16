@@ -66,8 +66,11 @@ void MercurySession::reconnect() {
   isReconnecting = true;
 
   try {
-    this->conn = nullptr;
-    this->shanConn = nullptr;
+    {
+      std::scoped_lock lock(connMutex);
+      this->conn = nullptr;
+      this->shanConn = nullptr;
+    }
 
     this->connectWithRandomAp();
     this->authenticate(this->authBlob);
@@ -127,7 +130,17 @@ void MercurySession::unregisterAudioKey(uint32_t sequenceId) {
 void MercurySession::disconnect() {
   CSPOT_LOG(info, "Disconnecting mercury session");
   this->isRunning = false;
-  conn->close();
+
+  /* conn is null while a reconnection is in flight; isRunning above already
+   * makes the retry loop exit, closing is just to unblock a pending read */
+  std::shared_ptr<PlainConnection> conn;
+  {
+    std::scoped_lock lock(connMutex);
+    conn = this->conn;
+  }
+  if (conn)
+    conn->close();
+
   std::scoped_lock lock(this->isRunningMutex);
 }
 
@@ -305,8 +318,22 @@ uint64_t MercurySession::executeSubscription(RequestType method,
   // Bump sequence id
   this->sequenceId += 1;
 
+  /* the session's task may be swapping shanConn for a reconnection right now,
+   * and dereferencing it here would not be a catchable failure, so take a
+   * snapshot; when disconnected, the request is simply lost */
+  std::shared_ptr<ShannonConnection> shanConn;
+  {
+    std::scoped_lock lock(connMutex);
+    shanConn = this->shanConn;
+  }
+
+  if (!shanConn) {
+    CSPOT_LOG(info, "Mercury request skipped, session is reconnecting");
+    return this->sequenceId - 1;
+  }
+
   try {
-    this->shanConn->sendPacket(
+    shanConn->sendPacket(
         static_cast<std::underlying_type<RequestType>::type>(method),
         sequenceIdBytes);
   } catch (...) {
@@ -337,8 +364,21 @@ uint32_t MercurySession::requestAudioKey(const std::vector<uint8_t>& trackId,
 
   // Used for broken connection detection
   // this->lastRequestTimestamp = timeProvider->getSyncedTimestamp();
+
+  // same snapshot as executeSubscription: this runs on the track queue's task
+  std::shared_ptr<ShannonConnection> shanConn;
+  {
+    std::scoped_lock lock(connMutex);
+    shanConn = this->shanConn;
+  }
+
+  if (!shanConn) {
+    CSPOT_LOG(info, "Audio key request skipped, session is reconnecting");
+    return audioKeySequence - 1;
+  }
+
   try {
-    this->shanConn->sendPacket(
+    shanConn->sendPacket(
         static_cast<uint8_t>(RequestType::AUDIO_KEY_REQUEST_COMMAND), buffer);
   } catch (...) {
     // @TODO: Handle disconnect

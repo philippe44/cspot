@@ -2,6 +2,7 @@
 
 #include <stdint.h>  // for uint8_t
 #include <memory>    // for shared_ptr, unique_ptr
+#include <mutex>     // for mutex
 #include <string>    // for string
 #include <vector>    // for vector
 
@@ -22,6 +23,11 @@ class Session {
   std::unique_ptr<cspot::AuthChallenges> challenges;
   std::shared_ptr<cspot::PlainConnection> conn;
   std::shared_ptr<LoginBlob> authBlob;
+
+  /* conn and shanConn are swapped by the session's task during reconnection,
+   * but other tasks send through them; they must hold this while copying the
+   * pointers, and the session's task while replacing them */
+  std::mutex connMutex;
 
   std::string deviceId = "142137fd329622137a14901634264e6f332e2411";
 
