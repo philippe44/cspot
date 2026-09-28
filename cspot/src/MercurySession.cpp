@@ -248,8 +248,9 @@ uint64_t MercurySession::executeSubscription(RequestType method,
                                              ResponseCallback subscription,
                                              DataParts& payload) {
 
-  // make sure we are not reconnecting
+  // make sure we are not reconnecting or stopped
   std::scoped_lock lock(connectingMutex);
+  if (!isRunning) return 0;
 
   CSPOT_LOG(debug, "Executing Mercury Request, type %s",
             RequestTypeMap[method].c_str());
@@ -324,9 +325,10 @@ uint32_t MercurySession::requestAudioKey(const std::vector<uint8_t>& trackId,
                                          AudioKeyCallback audioCallback) {
   auto buffer = fileId;
 
-  // make sure we are not reconnecting
+  // make sure we are not reconnecting or stopped
   std::scoped_lock lock(connectingMutex);
-
+  if (!isRunning) return 0;
+  
   // Store callback
   this->audioKeyCallbacks.insert({this->audioKeySequence, audioCallback});
 

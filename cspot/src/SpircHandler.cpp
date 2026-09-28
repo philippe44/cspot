@@ -120,6 +120,7 @@ void SpircHandler::updatePositionMs(uint32_t position) {
 }
 
 void SpircHandler::disconnect() {
+  this->ctx->session->disable();
   this->trackQueue->stopTask();
   this->trackPlayer->stop();
   this->ctx->session->disconnect();

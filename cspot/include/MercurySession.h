@@ -95,6 +95,8 @@ class MercurySession : public bell::Task, public cspot::Session {
 
   void disconnect();
 
+  void disable() { isRunning = false; }
+
   void setConnectedHandler(ConnectionEstabilishedCallback callback);
 
   bool triggerTimeout() override;
