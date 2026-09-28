@@ -11,5 +11,4 @@ cspot/protos
 targets/esp32/sdkconfig.cspot-wrover-b
 *.bak
 ClientInfo.h
-targets/cli/client_info.h
-targets/esp32/client_info.h
+client_info.h
