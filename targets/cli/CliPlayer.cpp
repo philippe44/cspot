@@ -70,6 +70,7 @@ CliPlayer::CliPlayer(std::unique_ptr<AudioSink> sink,
             this->isPaused = true;
             this->playlistEnd = false;
             this->centralAudioBuffer->clearBuffer();
+            this->streamTrackId.clear();
             break;
           case cspot::SpircHandler::EventType::DEPLETED:
             this->playlistEnd = true;

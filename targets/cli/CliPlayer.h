@@ -38,7 +38,7 @@ class CliPlayer : public bell::Task {
   std::atomic<bool> isRunning = true;
   std::mutex runningMutex;
   std::atomic<bool> playlistEnd = false;
-  std::string_view streamTrackId;
+  std::string streamTrackId;
 
   void runTask() override;
 };
