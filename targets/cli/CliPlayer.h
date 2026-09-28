@@ -39,6 +39,7 @@ class CliPlayer : public bell::Task {
   std::mutex runningMutex;
   std::atomic<bool> playlistEnd = false;
   std::unordered_map<size_t, std::string> trackIds;
+  std::mutex trackIdsMutex;
   size_t currentHash = 0;
 
   void runTask() override;

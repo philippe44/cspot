@@ -39,6 +39,7 @@ CliPlayer::CliPlayer(std::unique_ptr<AudioSink> sink,
         auto hash = hashFunc(trackId);
 
         if (currentHash != hash) {
+          std::scoped_lock lock(trackIdsMutex);
           trackIds[hash] = trackId;
           currentHash = hash;
         }
@@ -69,13 +70,15 @@ CliPlayer::CliPlayer(std::unique_ptr<AudioSink> sink,
           case cspot::SpircHandler::EventType::SEEK:
             this->centralAudioBuffer->clearBuffer();
             break;
-          case cspot::SpircHandler::EventType::PLAYBACK_START:
+          case cspot::SpircHandler::EventType::PLAYBACK_START: {
             this->isPaused = true;
             this->playlistEnd = false;
             this->centralAudioBuffer->clearBuffer();
+            std::scoped_lock lock(trackIdsMutex);
             this->trackIds.clear();
             this->currentHash = 0;
             break;
+          }
           case cspot::SpircHandler::EventType::DEPLETED:
             this->playlistEnd = true;
             break;
@@ -125,6 +128,7 @@ void CliPlayer::runTask() {
         continue;
       } else {
         if (lastHash != chunk->trackHash) {
+          std::scoped_lock lock(trackIdsMutex);
           std::cout << " Last hash " << lastHash << " new hash "
                     << chunk->trackHash << std::endl;
           lastHash = chunk->trackHash;
