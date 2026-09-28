@@ -38,6 +38,8 @@ CliPlayer::CliPlayer(std::unique_ptr<AudioSink> sink,
       [this, &hashFunc](uint8_t* data, size_t bytes, std::string_view trackId) {
         auto hash = hashFunc(trackId);
 
+        if (streamTrackId != trackId) streamTrackId = trackId;
+
         return this->centralAudioBuffer->writePCM(data, bytes, hash);
       });
 
@@ -121,7 +123,7 @@ void CliPlayer::runTask() {
           std::cout << " Last hash " << lastHash << " new hash "
                     << chunk->trackHash << std::endl;
           lastHash = chunk->trackHash;
-          this->handler->notifyAudioReachedPlayback();
+          this->handler->notifyAudioReachedPlayback(streamTrackId);
         }
 
 #ifndef BELL_DISABLE_CODECS

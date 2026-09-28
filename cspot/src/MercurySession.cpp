@@ -63,7 +63,7 @@ void MercurySession::runTask() {
 }
 
 void MercurySession::reconnect() {
-  isReconnecting = true;
+  std::scoped_lock lock(connectingMutex);
 
   try {
     this->conn = nullptr;
@@ -77,7 +77,6 @@ void MercurySession::reconnect() {
     BELL_SLEEP_MS(100);
 
     lastPingTimestamp = timeProvider->getSyncedTimestamp();
-    isReconnecting = false;
 
     this->executeEstabilishedCallback = true;
   } catch (...) {
@@ -248,6 +247,10 @@ uint64_t MercurySession::executeSubscription(RequestType method,
                                              ResponseCallback callback,
                                              ResponseCallback subscription,
                                              DataParts& payload) {
+
+  // make sure we are not reconnecting
+  std::scoped_lock lock(connectingMutex);
+
   CSPOT_LOG(debug, "Executing Mercury Request, type %s",
             RequestTypeMap[method].c_str());
 
@@ -320,6 +323,9 @@ uint32_t MercurySession::requestAudioKey(const std::vector<uint8_t>& trackId,
                                          const std::vector<uint8_t>& fileId,
                                          AudioKeyCallback audioCallback) {
   auto buffer = fileId;
+
+  // make sure we are not reconnecting
+  std::scoped_lock lock(connectingMutex);
 
   // Store callback
   this->audioKeyCallbacks.insert({this->audioKeySequence, audioCallback});

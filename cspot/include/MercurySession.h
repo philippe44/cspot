@@ -123,8 +123,8 @@ class MercurySession : public bell::Task, public cspot::Session {
   std::string countryCode = "";
 
   std::mutex isRunningMutex;
+  std::recursive_mutex connectingMutex;
   std::atomic<bool> isRunning = false;
-  std::atomic<bool> isReconnecting = false;
   std::atomic<bool> executeEstabilishedCallback = false;
 
   void failAllPending();
