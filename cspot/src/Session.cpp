@@ -4,6 +4,7 @@
 #include <cstdint>      // for uint8_t
 #include <functional>   // for __base
 #include <memory>       // for shared_ptr, unique_ptr, make_unique
+#include <mutex>        // for scoped_lock
 #include <random>       // for default_random_engine, independent_bi...
 #include <type_traits>  // for remove_extent_t
 #include <utility>      // for move
@@ -33,7 +34,10 @@ Session::Session() {
 Session::~Session() {}
 
 void Session::connect(std::unique_ptr<cspot::PlainConnection> connection) {
-  this->conn = std::move(connection);
+  {
+    std::scoped_lock lock(connMutex);
+    this->conn = std::move(connection);
+  }
   conn->timeoutHandler = [this]() {
     return this->triggerTimeout();
   };
@@ -48,11 +52,15 @@ void Session::connect(std::unique_ptr<cspot::PlainConnection> connection) {
   CSPOT_LOG(debug, "Received shannon keys");
 
   // Generates the public and priv key
-  this->shanConn = std::make_shared<ShannonConnection>();
+  auto shanConn = std::make_shared<ShannonConnection>();
 
-  // Init shanno-encrypted connection
-  this->shanConn->wrapConnection(this->conn, challenges->shanSendKey,
-                                 challenges->shanRecvKey);
+  // Init shanno-encrypted connection, and only then publish it so another
+  // task cannot pick up a connection that is not wrapped yet
+  shanConn->wrapConnection(this->conn, challenges->shanSendKey,
+                           challenges->shanRecvKey);
+
+  std::scoped_lock lock(connMutex);
+  this->shanConn = shanConn;
 }
 
 void Session::connectWithRandomAp() {
