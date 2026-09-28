@@ -128,9 +128,9 @@ void MercurySession::disconnect() {
   this->isRunning = false;
 
   // make sure we have a connection or are not reconnecting
-  std::unique_lock lock(connectingMutex);
+  std::unique_lock connlock(connectingMutex);
   if (conn) conn->close();
-  lock.unlock();
+  connlock.unlock();
 
   std::scoped_lock lock(this->isRunningMutex);
 }
