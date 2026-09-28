@@ -6,6 +6,7 @@
 #include <memory>    // for shared_ptr, unique_ptr
 #include <mutex>     // for mutex
 #include <string>    // for string
+#include <unordered_map>
 
 #include "AudioSink.h"  // for AudioSink
 #include "BellTask.h"   // for Task
@@ -25,7 +26,6 @@ class CliPlayer : public bell::Task {
   void disconnect();
 
  private:
-  std::string currentTrackId;
   std::shared_ptr<cspot::SpircHandler> handler;
   std::shared_ptr<bell::BellDSP> dsp;
   std::unique_ptr<AudioSink> audioSink;
@@ -38,7 +38,8 @@ class CliPlayer : public bell::Task {
   std::atomic<bool> isRunning = true;
   std::mutex runningMutex;
   std::atomic<bool> playlistEnd = false;
-  std::string streamTrackId;
+  std::unordered_map<size_t, std::string> trackIds;
+  size_t currentHash = 0;
 
   void runTask() override;
 };
