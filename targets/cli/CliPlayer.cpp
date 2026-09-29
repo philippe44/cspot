@@ -35,16 +35,18 @@ CliPlayer::CliPlayer(std::unique_ptr<AudioSink> sink,
   auto hashFunc = std::hash<std::string_view>();
 
   this->handler->getTrackPlayer()->setDataCallback(
-      [this, &hashFunc](uint8_t* data, size_t bytes, std::string_view trackId) {
-        auto hash = hashFunc(trackId);
+      [this, hashFunc](uint8_t* data, size_t bytes, std::string_view trackId) {
 
-        if (currentHash != hash) {
-          std::scoped_lock lock(trackIdsMutex);
-          trackIds[hash] = trackId;
-          currentHash = hash;
+        if (this->streamTrackId != trackId) {
+          std::scoped_lock lock(this->trackMutex);
+          /* one track playing, one track streaming but we might have had a seek that happened
+           * after the playing track was fully streamed so we need to accept data but (and 
+           * no notification shall be done */
+          if (this->playTrackId != trackId && this->playTrackId != this->streamTrackId) return (size_t) 0;
+          this->streamTrackId = trackId;
         }
 
-        return this->centralAudioBuffer->writePCM(data, bytes, hash);
+        return this->centralAudioBuffer->writePCM(data, bytes, hashFunc(trackId));
       });
 
   this->isPaused = false;
@@ -60,7 +62,7 @@ CliPlayer::CliPlayer(std::unique_ptr<AudioSink> sink,
               this->pauseRequested = false;
             }
             break;
-          case cspot::SpircHandler::EventType::FLUSH: {
+          case cspot::SpircHandler::EventType::FLUSH: {        
             this->centralAudioBuffer->clearBuffer();
             break;
           }
@@ -73,10 +75,12 @@ CliPlayer::CliPlayer(std::unique_ptr<AudioSink> sink,
           case cspot::SpircHandler::EventType::PLAYBACK_START: {
             this->isPaused = true;
             this->playlistEnd = false;
+            
+            // make sure we will re-notify
+            std::scoped_lock lock(this->trackMutex);
             this->centralAudioBuffer->clearBuffer();
-            std::scoped_lock lock(trackIdsMutex);
-            this->trackIds.clear();
-            this->currentHash = 0;
+            this->streamTrackId.clear();
+            this->playTrackId.clear();
             break;
           }
           case cspot::SpircHandler::EventType::DEPLETED:
@@ -127,13 +131,13 @@ void CliPlayer::runTask() {
         BELL_SLEEP_MS(10);
         continue;
       } else {
-        if (lastHash != chunk->trackHash) {
-          std::scoped_lock lock(trackIdsMutex);
+        if (this->playTrackId.empty() || lastHash != chunk->trackHash) {
           std::cout << " Last hash " << lastHash << " new hash "
                     << chunk->trackHash << std::endl;
           lastHash = chunk->trackHash;
-          this->handler->notifyAudioReachedPlayback(this->trackIds[lastHash]);
-          this->trackIds.erase(lastHash);
+          std::scoped_lock lock(this->trackMutex);
+          this->handler->notifyAudioReachedPlayback(streamTrackId);
+          this->playTrackId = this->streamTrackId;
         }
 
 #ifndef BELL_DISABLE_CODECS
