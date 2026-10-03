@@ -124,13 +124,46 @@ bool PlaybackState::isActive() {
   return innerFrame.device_state.is_active;
 }
 
+bool PlaybackState::remoteTookOver() {
+  if (!isActive() || !remoteFrame.device_state.is_active)
+    return false;
+
+  // our own frame is not another device having taken the session
+  if (remoteFrame.ident && innerFrame.ident &&
+      !strcmp(remoteFrame.ident, innerFrame.ident))
+    return false;
+
+  /* Both sides stamp when they became active, and this orders them the way
+   * legacy SPIRC does rather than by the time of the latest Load. A device that
+   * became active before us has not taken the session: while playback is being
+   * transferred to us, the device we are taking it from can still send a frame
+   * marked active carrying its older stamp, and treating that as a takeover
+   * hands the session straight back. A device claiming the same instant gets
+   * it, which is compatibility rather than leader election: two devices stamped
+   * alike that notify each other both end up inactive. With nothing usable to
+   * compare we keep the old behaviour. */
+  if (!remoteFrame.device_state.has_became_active_at ||
+      !innerFrame.device_state.has_became_active_at ||
+      !remoteFrame.device_state.became_active_at ||
+      !innerFrame.device_state.became_active_at)
+    return true;
+
+  return remoteFrame.device_state.became_active_at >=
+         innerFrame.device_state.became_active_at;
+}
+
 void PlaybackState::setActive(bool isActive) {
-  innerFrame.device_state.is_active = isActive;
-  if (isActive) {
+  /* stamp when we *become* active. Every Load frame calls this, and stamping
+   * again would make an ordinary track load look like a new activation and keep
+   * moving us ahead of a device that has genuinely taken the session over
+   * since. It cannot tell a Load that transfers playback back to us from one
+   * that arrives while we are still active: both keep the original stamp */
+  if (isActive && !innerFrame.device_state.is_active) {
     innerFrame.device_state.became_active_at =
         ctx->timeProvider->getSyncedTimestamp();
     innerFrame.device_state.has_became_active_at = true;
   }
+  innerFrame.device_state.is_active = isActive;
 }
 
 void PlaybackState::updatePositionMs(uint32_t position) {

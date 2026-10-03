@@ -6,7 +6,7 @@
 namespace cspot {
 class TimeProvider {
  private:
-  unsigned long long timestampDiff;
+  unsigned long long timestampDiff = 0;
 
  public:
   /**
