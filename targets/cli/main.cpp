@@ -15,8 +15,12 @@
 #include "SpircHandler.h"         // for SpircHandler
 #include "WrappedSemaphore.h"     // for WrappedSemaphore
 #include "civetweb.h"             // for mg_header, mg_get_request_info
+#ifdef BELL_ONLY_CJSON
+#include "cJSON.h"
+#else
 #include "nlohmann/json.hpp"      // for basic_json<>::object_t, basic_json
 #include "nlohmann/json_fwd.hpp"  // for json
+#endif
 #ifdef _WIN32
 #include <winsock2.h>
 #endif
@@ -74,11 +78,18 @@ class ZeroconfAuthenticator {
     });
 
     server->registerPost("/spotify_info", [this](struct mg_connection* conn) {
+#ifdef BELL_ONLY_CJSON
+      cJSON* json_obj = cJSON_CreateObject();
+      cJSON_AddNumberToObject(json_obj, "status", 101);
+      cJSON_AddNumberToObject(json_obj, "spotifyError", 0);
+      cJSON_AddStringToObject(json_obj, "statusString", "ERROR-OK");
+#else
       nlohmann::json obj;
       // Prepare a success response for spotify
       obj["status"] = 101;
       obj["spotifyError"] = 0;
       obj["statusString"] = "ERROR-OK";
+#endif
 
       std::string body = "";
       auto requestInfo = mg_get_request_info(conn);
@@ -104,7 +115,15 @@ class ZeroconfAuthenticator {
         onAuthSuccess();
       }
 
+#ifdef BELL_ONLY_CJSON
+      char* str = cJSON_PrintUnformatted(json_obj);
+      cJSON_Delete(json_obj);
+      std::string json_objStr(str);
+      free(str);
+      return server->makeJsonResponse(json_objStr);
+#else
       return server->makeJsonResponse(obj.dump());
+#endif
     });
 
     // Register mdns service, for spotify to find us
