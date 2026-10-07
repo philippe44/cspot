@@ -613,8 +613,7 @@ TrackQueue::Reached TrackQueue::notifyTrackReached(
 
   // Validate the entire path before changing the queue. A decoder can skip
   // entries without advancing the track that is currently audible.
-  const bool pending = notifyPending;
-  size_t advances = pending ? 0 : 1;
+  size_t advances = notifyPending ? 0 : 1;
 
   if (!identifier.empty()) {
     // Start at the expected entry. Only abandoned entries may be bypassed.
@@ -644,7 +643,7 @@ TrackQueue::Reached TrackQueue::notifyTrackReached(
   }
 
   current = preloadedTracks[0];
-  if (pending) {
+  if (notifyPending) {
     notifyPending = false;
     return Reached::CONSUMED_PENDING;
   }
