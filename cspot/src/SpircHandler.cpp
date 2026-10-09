@@ -135,8 +135,7 @@ void SpircHandler::handleFrame(std::vector<uint8_t>& data) {
       CSPOT_LOG(debug, "Notify frame");
 
       // Pause the playback if another player took control
-      if (playbackState->isActive() &&
-          playbackState->remoteFrame.device_state.is_active) {
+      if (playbackState->remoteTookOver()) {
         CSPOT_LOG(debug, "Another player took control, pausing playback");
         playbackState->setActive(false);
 

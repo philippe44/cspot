@@ -66,6 +66,14 @@ class PlaybackState {
   bool isActive();
 
   /**
+     * @brief Whether the last received frame means another device took the
+     * session from us.
+     *
+     * @return true the remote device is now the active one
+     */
+  bool remoteTookOver();
+
+  /**
      * @brief Updates local track position.
      *
      * @param position position in milliseconds
